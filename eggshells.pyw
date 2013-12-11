@@ -1,36 +1,40 @@
-import distorm3
+try:
+    from distorm import *
+    module = 'distorm'
+except ImportError:
+    try:
+        from nasm import *
+        module = 'nasm'
+    except ImportError:
+        raise EnvironmentError("Couldn't find distorm or nasm")
 import codecs
-
-
-def disassemble(shellcode, mode=32):
-    if __name__ == '__main__':
-        print shellcode.decode('utf-8').strip()
-        code = codecs.escape_decode(shellcode.decode('utf-8').strip())[0]
-    else:
-        code = shellcode
-    if mode == 32:
-        return distorm3.Decode(0x0, code, distorm3.Decode32Bits)
-    elif mode == 64:
-        return distorm3.Decode(0x0, code, distorm3.Decode64Bits)
-    elif mode == 16:
-        return distorm3.Decode(0x0, code, distorm3.Decode16Bits)
 
 
 def main():
     def value(val):
+        '''
+        Sets disassembler mode (e.g. 16bit, 32bit, or 64bit)
+        '''
         global mode
         mode = val
 
-    def render():
-        disasm.delete(1.0, tk.END)
+    def clean(shellcode):
+        '''
+        Cleans the format that we get from tkinter into a format we can disassemble easily. (i.e. \x00\x00)
+        '''
+        return codecs.escape_decode(shellcode.decode('utf-8').strip())[0]
 
-        for i in disassemble(shellcode.get(1.0, tk.END), mode):
-            disasm.insert(tk.INSERT, "0x%08x (%02x) %-20s %s" % (i[0], i[1], i[3], i[2]) + "\n")
+    def render():
+        '''
+        Cleans out the Text widget, does the disassembly and inserts it.
+        '''
+        disasm.delete(1.0, tk.END)
+        disasm.insert(tk.INSERT, disassemble(clean(shellcode.get(1.0, tk.END)), mode))
 
     import Tkinter as tk
 
     top = tk.Tk()
-    top.title("Eggshells")
+    top.title("Eggshells - " + module)
     top.resizable(0, 0)
 
     shellcode = tk.Text(top)

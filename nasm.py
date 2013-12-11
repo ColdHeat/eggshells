@@ -6,15 +6,29 @@ import sys
 if sys.platform.startswith('linux'):
     NASM = '/usr/bin/nasm'
     NDISASM = '/usr/bin/ndisasm'
+
 elif sys.platform.startswith('win32'):
     NASM = 'nasm/nasm.exe'
     NDISASM = 'nasm/ndisasm.exe'
 
+if not os.path.exists(NASM):
+    raise EnvironmentError('nasm not found')
+if not os.path.exists(NDISASM):
+    raise EnvironmentError('ndisasm not found')
+
+
 def delete_file(filename):
+    """
+    Deletes file from the disk if it exists
+    """
     if os.path.exists(filename):
         os.unlink(filename)
 
+
 def assemble(asm, mode="elf"):
+    '''
+    Assemble using nasm, return raw hex bytes.
+    '''
     temp = tempfile.NamedTemporaryFile(delete=False)
 
     linkme = tempfile.NamedTemporaryFile(delete=False)
@@ -24,38 +38,44 @@ def assemble(asm, mode="elf"):
         temp.close()
         linkme.close()
 
-        link = subprocess.check_output([NASM, '-f '+mode, temp.name, '-o '+dir+'/link.o'])
-        out = subprocess.check_output([NASM, temp.name, '-o '+temp.name+'.elf'])
+        link = subprocess.check_output([NASM, '-f ' + mode, temp.name, '-o ' + dir + '/link.o'])
+        out = subprocess.check_output([NASM, temp.name, '-o ' + temp.name + '.elf'])
 
-        asm = open(temp.name+'.elf', 'rb')
+        asm = open(temp.name + '.elf', 'rb')
         asm = asm.read()
-        delete_file(temp.name+'.elf')
+        delete_file(temp.name + '.elf')
         delete_file(linkme.name)
-        delete_file(dir+'/link.o')
+        delete_file(dir + '/link.o')
         delete_file(temp.name)
         return asm
     except:
-        delete_file(temp.name+'.elf')
+        delete_file(temp.name + '.elf')
         delete_file(linkme.name)
-        delete_file(dir+'/link.o')
+        delete_file(dir + '/link.o')
         delete_file(temp.name)
         return "assembly failed"
 
 
 def disassemble(elf, mode=32):
+    '''
+    Disassemble using ndisasm. Return the output.
+    '''
     temp = tempfile.NamedTemporaryFile(delete=False)
     try:
         temp.write(elf)
         temp.close()
 
-        asm = subprocess.check_output([NDISASM, '-b '+str(mode), temp.name])
+        asm = subprocess.check_output([NDISASM, '-b ' + str(mode), temp.name])
         delete_file(temp.name)
         return asm
     except:
         delete_file(temp.name)
         return 'disassembly failed'
 
-print disassemble('\x48\x31\xc0\x50\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\xb0\x3b\x48\x89\xe7\x48\x31\xf6\x48\x31\xd2\x0f\x05', 64)
+
+print disassemble(
+    '\x48\x31\xc0\x50\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\xb0\x3b\x48\x89\xe7\x48\x31\xf6\x48\x31\xd2\x0f\x05',
+    64)
 asm = '''
 BITS 64
 main:
