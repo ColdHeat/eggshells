@@ -35,13 +35,14 @@ def main():
 
     top = tk.Tk()
     top.title("Eggshells - " + module)
-    top.resizable(0, 0)
 
     shellcode = tk.Text(top)
     shellcode.pack(anchor=tk.W, fill=tk.BOTH, expand=1)
+    shellcode.config(height=4, bd=2)
 
     disasm = tk.Text()
     disasm.pack(anchor=tk.W, fill=tk.BOTH, expand=1)
+    disasm.config(height=4, bd=2)
 
     var = tk.IntVar()
 

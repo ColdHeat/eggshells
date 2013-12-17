@@ -2,6 +2,7 @@ import os
 import subprocess
 import tempfile
 import sys
+import re
 
 if sys.platform.startswith('linux'):
     NASM = '/usr/bin/nasm'
@@ -65,28 +66,33 @@ def disassemble(elf, mode=32):
         temp.write(elf)
         temp.close()
 
-        asm = subprocess.check_output([NDISASM, '-b ' + str(mode), temp.name])
+        asm = subprocess.check_output([NDISASM, '-a', '-b ' + str(mode), temp.name])
         delete_file(temp.name)
+
         return asm
+        
+        #disasm = asm.split('\n') # parse nasm output. Not ready yet because nasm will output a new line if the instruction is too long
+        #return [" ".join(x.split()).split(' ', 2) for x in disasm ]
     except:
         delete_file(temp.name)
         return 'disassembly failed'
 
 
-print disassemble(
-    '\x48\x31\xc0\x50\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\xb0\x3b\x48\x89\xe7\x48\x31\xf6\x48\x31\xd2\x0f\x05',
-    64)
+print disassemble('\x48\x31\xc0\x50\x48\xbf\x2f\x62\x69\x6e\x2f\x2f\x73\x68\x57\xb0\x3b\x48\x89\xe7\x48\x31\xf6\x48\x31\xd2\x0f\x05', 64)
+
+
 asm = '''
-BITS 64
+BITS 32
 main:
-    xor rax,rax
-    push rax
-    mov rdi, 0x68732f2f6e69622f
-    push rdi
-    mov al,59                 ;execve in unistd_64.h
-    mov rdi,rsp
-    xor rsi,rsi
-    xor rdx,rdx
-    syscall
+        ; execve("/bin/sh", 0, 0)
+        xor eax, eax
+        push eax
+        push 0x68732f2f         ; "//sh" -> stack
+        push 0x6e69622f         ; "/bin" -> stack
+        mov ebx, esp                ; arg1 = "/bin//sh\0"
+        mov ecx, eax                ; arg2 = 0
+        mov edx, eax                ; arg3 = 0
+        mov al, 11
+        int 0x80
 '''
-print repr(assemble(asm, "elf64"))
+print repr(assemble(asm, "elf"))
