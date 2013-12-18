@@ -1,4 +1,7 @@
 import distorm3
+import re
+
+hex_regex = re.compile(r'0x\w*')
 
 def disassemble(shellcode, mode=32):
     '''
@@ -13,8 +16,17 @@ def disassemble(shellcode, mode=32):
     elif mode == 16:
         disasm = distorm3.Decode(0x0, shellcode, distorm3.Decode16Bits)
 
-    disassembly = ""
+    disassembly = ''
     for line in disasm:
+
+        hexvals = hex_regex.findall(line[2])
+        if len(hexvals) > 0 and ('PUSH' in line[2] or 'MOV' in line[2]):
+            line = list(line) # Why you give me tuple Distorm?
+            if len(hexvals[0][2:]) > 2:
+                line[2] = line[2] + '\t; ' + hexvals[0][2:].decode('hex')
+            else:
+                line[2] = line[2] + '\t; ' + str(int(hexvals[0], 16))
+
         disassembly += "0x%08x (%02x) %-20s %s" % (line[0], line[1], line[3], line[2]) + "\n"
 
     return disassembly
