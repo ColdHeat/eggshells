@@ -4,6 +4,8 @@ import tempfile
 import sys
 import re
 
+subprocess.STARTF_USESHOWWINDOW = 1 # Hiding console windows in subprocess calls
+
 if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
     NASM = '/usr/bin/nasm'
     NDISASM = '/usr/bin/ndisasm'
@@ -40,8 +42,11 @@ def assemble(asm, mode="elf"):
         temp.close()
         linkme.close()
 
-        link = subprocess.check_output([NASM, '-f ' + mode, temp.name, '-o ' + dir + '/link.o'])
-        out = subprocess.check_output([NASM, temp.name, '-o ' + temp.name + '.elf'])
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags = subprocess.STARTF_USESHOWWINDOW
+        
+        link = subprocess.check_output([NASM, '-f ' + mode, temp.name, '-o ' + dir + '/link.o'], startupinfo=startupinfo)
+        out = subprocess.check_output([NASM, temp.name, '-o ' + temp.name + '.elf'], startupinfo=startupinfo)
 
         asm = open(temp.name + '.elf', 'rb')
         asm = asm.read()
@@ -67,7 +72,10 @@ def disassemble(elf, mode=32):
         temp.write(elf)
         temp.close()
 
-        asm = subprocess.check_output([NDISASM, '-a', '-b ' + str(mode), temp.name])
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags = subprocess.STARTF_USESHOWWINDOW
+
+        asm = subprocess.check_output([NDISASM, '-a', '-b ' + str(mode), temp.name], startupinfo=startupinfo)
         delete_file(temp.name)
 
     except:
